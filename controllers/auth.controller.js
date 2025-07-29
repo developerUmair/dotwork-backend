@@ -51,7 +51,10 @@ export const signup = async (req, res, next) => {
       otpExpiry,
     });
 
-    await sendEmail(email, "Verify Your Email", `Your OTP is: ${otp}`);
+    await sendEmail(email, "Verify Your Email", "templates/otpTemplate.html", {
+      name: newUser.name,
+      otp: newUser.otp,
+    });
     res.status(201).json({
       success: true,
       message:
