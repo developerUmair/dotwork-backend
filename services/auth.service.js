@@ -4,8 +4,8 @@ import { generateToken } from "../utils/generateToken.js";
 
 export const loginUser = async (email, password) => {
   // Find user and exclude password from initial query for security
-  const user = await User.findOne({ email }).select('+password');
-  
+  const user = await User.findOne({ email }).select("+password");
+
   if (!user) {
     throw createAuthError("Invalid email or password");
   }
@@ -15,15 +15,16 @@ export const loginUser = async (email, password) => {
     throw createAuthError("Invalid email or password");
   }
 
-
-
   // Check if user is active
   if (!user.active) {
     throw createAuthError("Account not activated. Please contact admin.", 403);
   }
 
-  const token = generateToken(user._id, user.role);
+  user.lastLogin = new Date();
+  await user.save();
   
+  const token = generateToken(user._id, user.role);
+
   return {
     token,
     user: sanitizeUser(user),

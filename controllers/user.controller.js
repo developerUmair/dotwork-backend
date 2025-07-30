@@ -85,6 +85,7 @@ export const getPendingUsers = async (req, res, next) => {
 export const approveUser = async (req, res, next) => {
   try {
     const { userId } = req.params;
+    const { role } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({
@@ -101,6 +102,7 @@ export const approveUser = async (req, res, next) => {
       return next(new AppError("User email is not verified", 400));
     }
     user.active = true;
+    user.role = role || user.role;
     user.createdBy = req.user.userId;
     await user.save();
 
@@ -111,6 +113,7 @@ export const approveUser = async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
         active: user.active,
       },
     });
