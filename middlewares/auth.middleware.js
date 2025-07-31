@@ -5,8 +5,6 @@ import User from "../models/User.model.js";
 export const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    console.log("Auth Header:", authHeader);
-
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
@@ -15,7 +13,6 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
-    console.log("Token:", token);
 
     // Verify token
     const decoded = jwt.verify(token, config.jwtSecret);

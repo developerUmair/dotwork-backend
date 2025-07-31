@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import errorHandler from "./middlewares/errorHandler.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import testRoutes from "./routes/test.routes.js";
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/test", testRoutes);
 app.use(errorHandler)
 
 export default app;

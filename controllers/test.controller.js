@@ -15,25 +15,28 @@ export const createTest = async (req, res, next) => {
       descriptive,
       candidateEmails,
       accessDeadline,
-      proctoring,
+      enableProctoring,
       screenShotFrequency,
       fullScreenForce,
     } = req.body;
+
+    const slug = Math.random().toString(36).substr(2, 9);
+    const testLink = `http://localhost:3000/test/${slug}`;
 
     if (
       !testName ||
       !category ||
       !duration ||
       !description ||
-      !createdBy ||
-      mcqs ||
-      !trueFalse ||
-      !descriptive ||
+      !Array.isArray(mcqs) ||
+      !Array.isArray(trueFalse) ||
+      !Array.isArray(descriptive) ||
+      !Array.isArray(candidateEmails) ||
       !candidateEmails.length ||
       !accessDeadline ||
-      !proctoring ||
-      !screenShotFrequency ||
-      !fullScreenForce
+      enableProctoring === undefined ||
+      screenShotFrequency === undefined ||
+      fullScreenForce === undefined
     ) {
       return next(new AppError("Required fields are missing", 400));
     }
@@ -47,21 +50,26 @@ export const createTest = async (req, res, next) => {
       trueFalse,
       descriptive,
       candidateEmails,
+      accessDeadline,
+      enableProctoring,
+      screenShotFrequency,
+      fullScreenForce,
+      testLink,
+      slug,
       createdBy: req.user.userId,
-      testLink: "will think over it later",
     });
 
     for (const email of candidateEmails) {
       await sendEmail(
         email,
-        "You've have been invited to a Test",
-        `<p>Hello,</p>
-            <p>You have been invited to take the test: <strong>${testName}</strong></p>
-            <p>Access Deadline: ${new Date(
-              accessDeadline
-            ).toLocaleDateString()}</p>
-            <p>Best of Luck!</p>
-            `
+        "You have been invited to a Test",
+        "./templates/invite-email.html", // Path relative to root or __dirname
+        {
+          name: "Candidate",
+          testName: testName,
+          accessDeadline: new Date(accessDeadline).toLocaleDateString(),
+          testLink: testLink,
+        }
       );
     }
 

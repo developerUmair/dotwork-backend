@@ -22,7 +22,7 @@ const testSchema = mongoose.Schema({
   descriptive: [{ question: String, marks: Number }],
   candidateEmails: [String],
   accessDeadline: Date,
-  proctoring: { type: Boolean, default: true },
+  enableProctoring: { type: Boolean, default: true },
   screenShotFrequency: { type: Number, required: true },
   fullScreenForce: { type: Boolean, default: true },
 });
