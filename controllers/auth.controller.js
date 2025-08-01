@@ -18,7 +18,9 @@ export const login = async (req, res, next) => {
     const result = await loginUser(email, password);
 
     res.status(200).json({
+      status: 200,
       success: true,
+      message: "Login successful. Welcome back!",
       token: result.token,
       user: result.user,
     });
@@ -56,9 +58,9 @@ export const signup = async (req, res, next) => {
       otp: newUser.otp,
     });
     res.status(201).json({
+      status: 201,
       success: true,
-      message:
-        "Registeration successful. Please verify your email with the OTP sent.",
+      message: "Success! Please verify the OTP sent.",
     });
   } catch (error) {
     next(error);
@@ -84,8 +86,9 @@ export const verifyOTP = async (req, res, next) => {
     user.otpExpiry = null;
     await user.save();
     res.status(200).json({
+      status: 200,
       succes: true,
-      message: "Email verified successfully. Awaiting admin approval.",
+      message: "Verified! Admin will approve shortly.",
     });
   } catch (error) {
     next(error);
