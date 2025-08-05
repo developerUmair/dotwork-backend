@@ -4,10 +4,7 @@ import { config } from "./config.js";
 
 const startServer = async () => {
     try {
-        await mongoose.connect(config.mongoUri, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        await mongoose.connect(config.mongoUri);
         console.log("MongoDB connected successfully");
         app.listen(config.port, () => {
             console.log(`Server is running on port ${config.port}`);

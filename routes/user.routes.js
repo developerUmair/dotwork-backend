@@ -6,6 +6,7 @@ import {
 import {
   approveUser,
   createUser,
+  getAllUsers,
   getPendingUsers,
   rejectUser,
 } from "../controllers/user.controller.js";
@@ -20,10 +21,10 @@ userRoutes.post(
 );
 
 userRoutes.get(
-  "/pending",
+  "/getAll",
   authenticateToken,
   authorizeRoles("ADMIN"),
-  getPendingUsers
+  getAllUsers
 );
 userRoutes.patch(
   "/approve/:userId",
