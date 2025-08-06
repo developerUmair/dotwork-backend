@@ -17,7 +17,7 @@ export const loginUser = async (email, password) => {
 
   // Check if user is active
   if (!user.active) {
-    throw createAuthError("Account not activated. Please wait for admin approval.", 403);
+    throw createAuthError("Hang on, admin approval needed.", 403);
   }
 
   user.lastLogin = new Date();

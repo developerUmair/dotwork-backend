@@ -18,12 +18,12 @@ export const login = async (req, res, next) => {
     const result = await loginUser(email, password);
 
     // Set token in HttpOnly cookie
-    res.cookie("token", result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "development",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    // res.cookie("token", result.token, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "development",
+    //   sameSite: "strict",
+    //   maxAge: 7 * 24 * 60 * 60 * 1000,
+    // });
 
     res.status(200).json({
       status: 200,
@@ -101,4 +101,17 @@ export const verifyOTP = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+export const logout = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "development",
+    sameSite: "strict",
+  });
+
+  return res.status(200).json({
+    succes: true,
+    message: "Logged out Successfully.",
+  });
 };
