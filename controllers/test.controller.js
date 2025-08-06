@@ -9,19 +9,14 @@ export const createTest = async (req, res, next) => {
       category,
       duration,
       description,
-      createdBy,
       mcqs,
       trueFalse,
       descriptive,
-      candidateEmails,
       accessDeadline,
       enableProctoring,
       screenShotFrequency,
       fullScreenForce,
     } = req.body;
-
-    const slug = Math.random().toString(36).substr(2, 9);
-    const testLink = `http://localhost:3000/test/${slug}`;
 
     if (
       !testName ||
@@ -31,8 +26,6 @@ export const createTest = async (req, res, next) => {
       !Array.isArray(mcqs) ||
       !Array.isArray(trueFalse) ||
       !Array.isArray(descriptive) ||
-      !Array.isArray(candidateEmails) ||
-      !candidateEmails.length ||
       !accessDeadline ||
       enableProctoring === undefined ||
       screenShotFrequency === undefined ||
@@ -40,6 +33,9 @@ export const createTest = async (req, res, next) => {
     ) {
       return next(new AppError("Required fields are missing", 400));
     }
+
+    const slug = Math.random().toString(36).substring(2, 11);
+    const testLink = `${process.env.FRONTEND_URL}/test/${slug}`;
 
     const newTest = await Test.create({
       testName,
@@ -49,7 +45,7 @@ export const createTest = async (req, res, next) => {
       mcqs,
       trueFalse,
       descriptive,
-      candidateEmails,
+      candidateEmails: [],
       accessDeadline,
       enableProctoring,
       screenShotFrequency,
@@ -59,24 +55,62 @@ export const createTest = async (req, res, next) => {
       createdBy: req.user.userId,
     });
 
-    for (const email of candidateEmails) {
+    res.status(201).json({
+      success: true,
+      message: "Test created successfully.",
+      test: newTest,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addCandidatesToTest = async (req, res, next) => {
+  try {
+    const { testId } = req.params;
+    const { candidateEmails } = req.body;
+
+    if (!candidateEmails || !Array.isArray(candidateEmails) || candidateEmails.length === 0) {
+      return next(new AppError("Candidate emails are required", 400));
+    }
+
+    const test = await Test.findById(testId);
+    if (!test) {
+      return next(new AppError("Test not found", 404));
+    }
+
+    // Prevent duplicates by email
+    const existingEmails = test.candidates.map((c) => c.email);
+    const newCandidates = candidateEmails
+      .filter((email) => !existingEmails.includes(email))
+      .map((email) => ({ email }));
+
+    if (newCandidates.length === 0) {
+      return res.status(200).json({ success: true, message: "No new candidates to add" });
+    }
+
+    test.candidates.push(...newCandidates);
+    await test.save();
+
+    // Send invitation emails
+    for (const email of newCandidates) {
       await sendEmail(
-        email,
+        email.email,
         "You have been invited to a Test",
-        "./templates/invite-email.html", // Path relative to root or __dirname
+        "./templates/invite-email.html",
         {
           name: "Candidate",
-          testName: testName,
-          accessDeadline: new Date(accessDeadline).toLocaleDateString(),
-          testLink: testLink,
+          testName: test.testName,
+          accessDeadline: new Date(test.accessDeadline).toLocaleDateString(),
+          testLink: test.testLink,
         }
       );
     }
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: "Test created and invitation emails sent successfully.",
-      testId: newTest._id,
+      message: "Candidates added and invitations sent.",
+      candidatesAdded: newCandidates.length,
     });
   } catch (error) {
     next(error);
