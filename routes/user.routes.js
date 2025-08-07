@@ -23,7 +23,7 @@ userRoutes.post(
 userRoutes.get(
   "/getAll",
   authenticateToken,
-  authorizeRoles("ADMIN"),
+  authorizeRoles("ADMIN", "HR"),
   getAllUsers
 );
 userRoutes.patch(

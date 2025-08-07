@@ -56,6 +56,7 @@ export const createTest = async (req, res, next) => {
     });
 
     res.status(201).json({
+      status: 201,
       success: true,
       message: "Test created successfully.",
       test: newTest,
@@ -70,7 +71,11 @@ export const addCandidatesToTest = async (req, res, next) => {
     const { testId } = req.params;
     const { candidateEmails } = req.body;
 
-    if (!candidateEmails || !Array.isArray(candidateEmails) || candidateEmails.length === 0) {
+    if (
+      !candidateEmails ||
+      !Array.isArray(candidateEmails) ||
+      candidateEmails.length === 0
+    ) {
       return next(new AppError("Candidate emails are required", 400));
     }
 
@@ -86,7 +91,9 @@ export const addCandidatesToTest = async (req, res, next) => {
       .map((email) => ({ email }));
 
     if (newCandidates.length === 0) {
-      return res.status(200).json({ success: true, message: "No new candidates to add" });
+      return res
+        .status(200)
+        .json({ success: true, message: "No new candidates to add" });
     }
 
     test.candidates.push(...newCandidates);
@@ -108,9 +115,47 @@ export const addCandidatesToTest = async (req, res, next) => {
     }
 
     res.status(200).json({
+      status: 200,
       success: true,
       message: "Candidates added and invitations sent.",
       candidatesAdded: newCandidates.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllTests = async (req, res, next) => {
+  try {
+    const tests = await Test.find().sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      message: "All test fetched successfully.",
+      total: tests.length,
+      tests,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTestDetails = async (req, res, next) => {
+  try {
+    const { testId } = req.params;
+    const test = await Test.findById(testId);
+    if (!test) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: "Test not found!",
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Test details fetched successfully.",
+      test,
     });
   } catch (error) {
     next(error);
