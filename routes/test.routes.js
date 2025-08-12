@@ -3,6 +3,8 @@ import {
   addCandidatesToTest,
   createTest,
   getAllTests,
+  getAssignedTestsToCandidate,
+  getTestBySlug,
   getTestDetails,
 } from "../controllers/test.controller.js";
 import {
@@ -12,15 +14,43 @@ import {
 
 const testRoutes = express.Router();
 
-testRoutes.post("/create", authenticateToken, authorizeRoles("HR"), createTest);
+testRoutes.post(
+  "/create",
+  authenticateToken,
+  authorizeRoles("HR", "ADMIN"),
+  createTest
+);
 testRoutes.patch(
   "/add-candidates/:testId",
   authenticateToken,
-  authorizeRoles("HR"),
+  authorizeRoles("HR", "ADMIN"),
   addCandidatesToTest
 );
-testRoutes.get("/getAll", authenticateToken, authorizeRoles("HR"), getAllTests);
-testRoutes.get("/:testId", authenticateToken, authorizeRoles("HR"), getTestDetails);
+testRoutes.get(
+  "/getAll",
+  authenticateToken,
+  authorizeRoles("HR", "ADMIN"),
+  getAllTests
+);
+testRoutes.get(
+  "/my-tests",
+  authenticateToken,
+  authorizeRoles("CANDIDATE"),
+  getAssignedTestsToCandidate
+);
+testRoutes.get(
+  "/:testId",
+  authenticateToken,
+  authorizeRoles("HR", "ADMIN"),
+  getTestDetails
+);
+
+testRoutes.get(
+  "/slug/:slug",
+  authenticateToken,
+  authorizeRoles("CANDIDATE", "HR", "ADMIN"),
+  getTestBySlug
+);
 // authRoutes.post("/login", login);
 // authRoutes.post("/verify-otp", verifyOTP);
 

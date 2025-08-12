@@ -52,6 +52,26 @@ export const createUser = async (req, res, next) => {
   }
 };
 
+export const getCurrentUser = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: 401,
+        success: false,
+        message: "Not Authenticated",
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+      user: req.user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getPendingUsers = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search = "" } = req.query;
@@ -152,36 +172,53 @@ export const rejectUser = async (req, res, next) => {
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, search = '', status = 'all' } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      status = "all",
+      role,
+    } = req.query;
 
     // Base search query for name/email
     let searchQuery = {
       $or: [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
       ],
     };
 
+    if (role) {
+      searchQuery.role = role.toUpperCase();
+    }
+
     // Add active/inactive status filter dynamically
-    if (status === 'active') {
+    if (status === "active") {
       searchQuery = { ...searchQuery, active: true };
-    } else if (status === 'inactive') {
+    } else if (status === "inactive") {
       searchQuery = { ...searchQuery, active: false };
     }
 
     // Stats counts
-    const [totalAdmins, totalHRs, totalCandidates, totalActiveUsers, totalInactiveUsers, totalUsers] = await Promise.all([
-      User.countDocuments({ role: 'ADMIN' }),
-      User.countDocuments({ role: 'HR' }),
-      User.countDocuments({ role: 'CANDIDATE' }),
+    const [
+      totalAdmins,
+      totalHRs,
+      totalCandidates,
+      totalActiveUsers,
+      totalInactiveUsers,
+      totalUsers,
+    ] = await Promise.all([
+      User.countDocuments(searchQuery),
+      User.countDocuments({ role: "ADMIN" }),
+      User.countDocuments({ role: "HR" }),
+      User.countDocuments({ role: "CANDIDATE" }),
       User.countDocuments({ active: true }),
       User.countDocuments({ active: false }),
-      User.countDocuments(searchQuery),
     ]);
 
     // Paginated user list
     const users = await User.find(searchQuery)
-      .select('-password -otp -otpExpiry')
+      .select("-password -otp -otpExpiry")
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .sort({ createdAt: -1 });
@@ -207,5 +244,3 @@ export const getAllUsers = async (req, res, next) => {
     next(error);
   }
 };
-
-

@@ -46,7 +46,7 @@ export const createTest = async (req, res, next) => {
       trueFalse,
       descriptive,
       candidateEmails: [],
-      accessDeadline,
+      accessDeadline: new Date(accessDeadline),
       enableProctoring,
       screenShotFrequency,
       fullScreenForce,
@@ -69,7 +69,7 @@ export const createTest = async (req, res, next) => {
 export const addCandidatesToTest = async (req, res, next) => {
   try {
     const { testId } = req.params;
-    const { candidateEmails } = req.body;
+    const { candidateEmails, accessDeadline } = req.body;
 
     if (
       !candidateEmails ||
@@ -84,6 +84,10 @@ export const addCandidatesToTest = async (req, res, next) => {
       return next(new AppError("Test not found", 404));
     }
 
+    const deadlineDate = new Date(accessDeadline);
+    if (deadlineDate <= new Date()) {
+      return next(new AppError("Access deadline must be in the future", 400));
+    }
     // Prevent duplicates by email
     const existingEmails = test.candidates.map((c) => c.email);
     const newCandidates = candidateEmails
@@ -97,6 +101,7 @@ export const addCandidatesToTest = async (req, res, next) => {
     }
 
     test.candidates.push(...newCandidates);
+    test.accessDeadline = accessDeadline;
     await test.save();
 
     // Send invitation emails
@@ -155,6 +160,75 @@ export const getTestDetails = async (req, res, next) => {
       status: 200,
       success: true,
       message: "Test details fetched successfully.",
+      test,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAssignedTestsToCandidate = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (user.role !== "CANDIDATE") {
+      return res.status(403).json({
+        status: 403,
+        success: false,
+        message: "Access Denied. Only candidates can access this resource",
+      });
+    }
+
+    const assignedTests = await Test.find({
+      "candidates.email": user.email,
+    })
+      .select(
+        "testName category description duration accessDeadline testLink createdAt"
+      )
+      .sort({ createdAt: -1 });
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Assigned tests retrieved successfully.",
+      total: assignedTests.length,
+      tests: assignedTests,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTestBySlug = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user._id;
+
+    const test = await Test.findOne({ slug })
+      .populate("createdBy", "name email role")
+      .populate("candidates", "name email");
+
+    if (!test) {
+      return res.status(404).json({
+        success: 404,
+        success: false,
+        message: "Test not found",
+      });
+    }
+
+    const isCandidate = test.candidates.some((c) => c.email === req.user.email);
+    const isCreator = test.createdBy.toString() === req.user._id.toString();
+
+    if (!isCreator && !isCandidate) {
+      return res.status(403).json({
+        status: 403,
+        success: false,
+        message: "You are not authorized to view this test!",
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Test fetched successfully by slug",
       test,
     });
   } catch (error) {

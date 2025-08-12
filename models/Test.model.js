@@ -35,7 +35,7 @@ const testSchema = mongoose.Schema(
       required: true,
     },
   },
-  { timeStamps: true }
+  { timestamps: true }
 );
 
 const Test = mongoose.model("Test", testSchema);

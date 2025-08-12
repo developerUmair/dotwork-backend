@@ -7,6 +7,7 @@ import {
   approveUser,
   createUser,
   getAllUsers,
+  getCurrentUser,
   getPendingUsers,
   rejectUser,
 } from "../controllers/user.controller.js";
@@ -29,14 +30,14 @@ userRoutes.get(
 userRoutes.patch(
   "/approve/:userId",
   authenticateToken,
-  authorizeRoles("ADMIN"),
+  authorizeRoles("ADMIN", "HR"),
   approveUser
 );
 
 userRoutes.delete(
   "/reject/:userId",
   authenticateToken,
-  authorizeRoles("ADMIN"),
+  authorizeRoles("ADMIN", "HR"),
   rejectUser
 );
 
