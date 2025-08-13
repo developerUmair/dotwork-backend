@@ -182,7 +182,7 @@ export const getAssignedTestsToCandidate = async (req, res, next) => {
       "candidates.email": user.email,
     })
       .select(
-        "testName category description duration accessDeadline testLink createdAt"
+        "testName category description duration accessDeadline testLink slug createdAt"
       )
       .sort({ createdAt: -1 });
     return res.status(200).json({
