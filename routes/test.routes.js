@@ -11,7 +11,8 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware.js";
-import { getMyAttemptForTestBody, submitTestAttemptFromBody } from "../controllers/attempt.controller.js";
+import { submitTestAttemptFromBody } from "../controllers/attempt.controller.js";
+
 
 const testRoutes = express.Router();
 
@@ -58,14 +59,6 @@ testRoutes.post(
   authenticateToken,
   authorizeRoles("CANDIDATE"),
   submitTestAttemptFromBody
-);
-
-/* ---------- Optional: get my attempt via body { slug | testId } ---------- */
-testRoutes.post(
-  "/attempt/my",
-  authenticateToken,
-  authorizeRoles("CANDIDATE", "HR", "ADMIN"),
-  getMyAttemptForTestBody
 );
 
 
