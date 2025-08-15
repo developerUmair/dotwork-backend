@@ -11,7 +11,7 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware.js";
-import { submitTestAttemptFromBody } from "../controllers/attempt.controller.js";
+import { getAllAttempts, submitTestAttemptFromBody } from "../controllers/attempt.controller.js";
 
 
 const testRoutes = express.Router();
@@ -60,6 +60,5 @@ testRoutes.post(
   authorizeRoles("CANDIDATE"),
   submitTestAttemptFromBody
 );
-
 
 export default testRoutes;

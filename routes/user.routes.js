@@ -7,8 +7,6 @@ import {
   approveUser,
   createUser,
   getAllUsers,
-  getCurrentUser,
-  getPendingUsers,
   rejectUser,
 } from "../controllers/user.controller.js";
 
