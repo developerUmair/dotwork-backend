@@ -274,7 +274,9 @@ export const getAllAttempts = async (req, res, next) => {
 export const getAttemptDetails = async (req, res, next) => {
   try {
     const { attemptId } = req.params;
-    const attempt = await Attempt.findById(attemptId);
+    const attempt = await Attempt.findById(attemptId)
+      .populate("candidate")
+      .lean();
     if (!attempt) {
       return res.status(404).json({
         status: 404,
