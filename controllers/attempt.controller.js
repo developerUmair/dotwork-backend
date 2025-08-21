@@ -295,3 +295,32 @@ export const getAttemptDetails = async (req, res, next) => {
     next(error);
   }
 };
+
+// Candidate attempts
+
+export const getMyAttempts = async (req, res, next) => {
+  try {
+    console.log("req", req)
+    const candidateId = req.user.userId ?? req.user._id;
+    const [attempts, total, totalEvaluated] = await Promise.all([
+      Attempt.find({ candidate: candidateId })
+        .populate("test", "testName category")
+        .populate("candidate", "name email role")
+        .lean(),
+      Attempt.countDocuments({ candidate: candidateId }),
+      Attempt.countDocuments({ candidate: candidateId, status: "evaluated" }),
+    ]);
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      data: attempts,
+      stats: {
+        total,
+        totalEvaluated,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

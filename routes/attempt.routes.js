@@ -3,7 +3,7 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware.js";
-import { getAllAttempts, getAttemptDetails } from "../controllers/attempt.controller.js";
+import { getAllAttempts, getAttemptDetails, getMyAttempts } from "../controllers/attempt.controller.js";
 
 const attemptRoutes = express.Router();
 
@@ -14,11 +14,13 @@ attemptRoutes.get(
   getAllAttempts
 );
 
+attemptRoutes.get("/mine", authenticateToken, authorizeRoles("CANDIDATE"), getMyAttempts);
 attemptRoutes.get(
   "/:attemptId",
   authenticateToken,
-  authorizeRoles("HR", "ADMIN"),
+  authorizeRoles("HR", "ADMIN", "CANDIDATE"),
   getAttemptDetails
 );
+
 
 export default attemptRoutes;
