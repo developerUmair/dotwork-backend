@@ -3,7 +3,7 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware.js";
-import { createProctoringScreenshot } from "../controllers/proctoring.controller.js";
+import { createProctoringScreenshot, getProctoringScreenshot } from "../controllers/proctoring.controller.js";
 import multer from "multer";
 
 const proctoringRoutes = express.Router();
@@ -19,6 +19,12 @@ proctoringRoutes.post(
   authorizeRoles("CANDIDATE"),
   upload.single("file"),
   createProctoringScreenshot
+);
+proctoringRoutes.get(
+  "/:attemptId",
+  authenticateToken,
+  authorizeRoles("HR", "ADMIN"),
+  getProctoringScreenshot
 );
 
 export default proctoringRoutes;
