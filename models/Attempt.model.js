@@ -31,7 +31,8 @@ const attemptSchema = new mongoose.Schema(
     evaluation: { type: mongoose.Schema.Types.Mixed, default: null },
 
     submittedAt: { type: Date, default: Date.now },
-    durationSeconds: { type: Number }
+    durationSeconds: { type: Number },
+    manualRemarks: { type: String, trim: true, default: "" }
   },
   { timestamps: true }
 );

@@ -76,7 +76,6 @@ export const createProctoringScreenshot = async (req, res, next) => {
   }
 };
 
-
 export const getProctoringScreenshot = async (req, res, next) => {
   try {
     const { attemptId } = req.params;

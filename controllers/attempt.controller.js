@@ -4,6 +4,7 @@ import Test from "../models/Test.model.js";
 import AppError from "../utils/AppError.js";
 import { evaluateWithGemini } from "../services/geminiEvaluate.service.js";
 import User from "../models/User.model.js";
+import mongoose from "mongoose";
 
 /* ---------------- helpers (kept in this file) ---------------- */
 
@@ -296,11 +297,52 @@ export const getAttemptDetails = async (req, res, next) => {
   }
 };
 
+// update attempt for manual remarks
+
+export const updateAttempt = async (req, res, next) => {
+  try {
+    const { attemptId } = req.params;
+    const { manualRemarks } = req.body;
+
+    if (!mongoose.isValidObjectId(attemptId)) {
+      return res.status(400).json({
+        status: 400,
+        success: false,
+        message: "Invalid attempt ID",
+      });
+    }
+
+    const updated = await Attempt.findByIdAndUpdate(
+      attemptId,
+      { $set: { manualRemarks: manualRemarks.trim() } },
+      { new: true, runValidators: true }
+    )
+      .populate("candidate")
+      .lean();
+
+    if (!updated) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: "Test not found!",
+      });
+    }
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Remarks added successfully.",
+      attempt: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Candidate attempts
 
 export const getMyAttempts = async (req, res, next) => {
   try {
-    console.log("req", req)
     const candidateId = req.user.userId ?? req.user._id;
     const [attempts, total, totalEvaluated] = await Promise.all([
       Attempt.find({ candidate: candidateId })

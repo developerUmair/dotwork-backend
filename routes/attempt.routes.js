@@ -3,7 +3,7 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware.js";
-import { getAllAttempts, getAttemptDetails, getMyAttempts } from "../controllers/attempt.controller.js";
+import { getAllAttempts, getAttemptDetails, getMyAttempts, updateAttempt } from "../controllers/attempt.controller.js";
 
 const attemptRoutes = express.Router();
 
@@ -20,6 +20,12 @@ attemptRoutes.get(
   authenticateToken,
   authorizeRoles("HR", "ADMIN", "CANDIDATE"),
   getAttemptDetails
+);
+attemptRoutes.patch(
+  "/remarks/:attemptId",
+  authenticateToken,
+  authorizeRoles("HR", "ADMIN"),
+  updateAttempt
 );
 
 
