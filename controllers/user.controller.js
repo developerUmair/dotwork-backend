@@ -132,7 +132,8 @@ export const approveUser = async (req, res, next) => {
       "templates/account-approved.html",
       {
         name: user.name,
-        loginLink: `http://localhost:3000/login`,
+        loginLink: `${process.env.FRONTEND_URL}/login`,
+
       }
     );
 

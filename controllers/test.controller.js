@@ -114,7 +114,7 @@ export const addCandidatesToTest = async (req, res, next) => {
           name: "Candidate",
           testName: test.testName,
           accessDeadline: new Date(test.accessDeadline).toLocaleDateString(),
-          testLink: test.testLink,
+          loginLink: `${process.env.FRONTEND_URL}/login`,
         }
       );
     }
