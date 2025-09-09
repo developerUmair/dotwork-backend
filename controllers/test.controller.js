@@ -97,7 +97,11 @@ export const addCandidatesToTest = async (req, res, next) => {
     if (newCandidates.length === 0) {
       return res
         .status(200)
-        .json({ success: true, message: "No new candidates to add" });
+        .json({
+          status: 200,
+          success: true,
+          message: "No new candidates to add",
+        });
     }
 
     test.candidates.push(...newCandidates);

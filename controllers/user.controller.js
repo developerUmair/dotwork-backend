@@ -133,7 +133,6 @@ export const approveUser = async (req, res, next) => {
       {
         name: user.name,
         loginLink: `${process.env.FRONTEND_URL}/login`,
-
       }
     );
 
@@ -181,6 +180,9 @@ export const getAllUsers = async (req, res, next) => {
       role,
     } = req.query;
 
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+
     // Base search query for name/email
     let searchQuery = {
       $or: [
@@ -193,36 +195,35 @@ export const getAllUsers = async (req, res, next) => {
       searchQuery.role = role.toUpperCase();
     }
 
-    // Add active/inactive status filter dynamically
     if (status === "active") {
       searchQuery = { ...searchQuery, active: true };
     } else if (status === "inactive") {
       searchQuery = { ...searchQuery, active: false };
     }
 
-    // Stats counts
+    // Counts (all aligned with searchQuery so your stats reflect current filters)
     const [
+      totalUsers,           // <-- overall (matching current filters)
       totalAdmins,
       totalHRs,
       totalCandidates,
       totalActiveUsers,
-      totalInactiveUsers,
-      totalUsers,
+      totalInactiveUsers
     ] = await Promise.all([
       User.countDocuments(searchQuery),
-      User.countDocuments({ role: "ADMIN" }),
-      User.countDocuments({ role: "HR" }),
-      User.countDocuments({ role: "CANDIDATE" }),
-      User.countDocuments({ active: true }),
-      User.countDocuments({ active: false }),
+      User.countDocuments({ ...searchQuery, role: "ADMIN" }),
+      User.countDocuments({ ...searchQuery, role: "HR" }),
+      User.countDocuments({ ...searchQuery, role: "CANDIDATE" }),
+      User.countDocuments({ ...searchQuery, active: true }),
+      User.countDocuments({ ...searchQuery, active: false }),
     ]);
 
-    // Paginated user list
     const users = await User.find(searchQuery)
       .select("-password -otp -otpExpiry")
-      .skip((page - 1) * limit)
-      .limit(Number(limit))
-      .sort({ createdAt: -1 });
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -236,12 +237,13 @@ export const getAllUsers = async (req, res, next) => {
       },
       pagination: {
         totalUsers,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(totalUsers / limit),
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(totalUsers / limitNum),
       },
     });
   } catch (error) {
     next(error);
   }
 };
+
