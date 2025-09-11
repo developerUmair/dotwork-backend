@@ -95,13 +95,11 @@ export const addCandidatesToTest = async (req, res, next) => {
       .map((email) => ({ email }));
 
     if (newCandidates.length === 0) {
-      return res
-        .status(200)
-        .json({
-          status: 200,
-          success: true,
-          message: "No new candidates to add",
-        });
+      return res.status(200).json({
+        status: 200,
+        success: true,
+        message: "No new candidates to add",
+      });
     }
 
     test.candidates.push(...newCandidates);
@@ -173,8 +171,9 @@ export const getTestDetails = async (req, res, next) => {
 
 export const getAssignedTestsToCandidate = async (req, res, next) => {
   try {
-    const user = req.user;
+    const user = req.user; // Get logged-in user details
     if (user.role !== "CANDIDATE") {
+      // Ensure the user is a candidate
       return res.status(403).json({
         status: 403,
         success: false,
@@ -186,18 +185,31 @@ export const getAssignedTestsToCandidate = async (req, res, next) => {
       "candidates.email": user.email,
     })
       .select(
-        "testName category description duration accessDeadline testLink slug createdAt"
+        "testName category description duration accessDeadline testLink slug createdAt candidates"
       )
       .sort({ createdAt: -1 });
+    const testsWithStatus = assignedTests.map((test) => {
+      const candidate = test.candidates.find((c) => c.email === user.email);
+
+      const hasAttempted = candidate ? candidate.hasAttempted : false;
+
+      const { candidates, ...testWithoutCandidates } = test.toObject();
+
+      return {
+        ...testWithoutCandidates,
+        hasAttempted,
+      };
+    });
+
     return res.status(200).json({
       status: 200,
       success: true,
       message: "Assigned tests retrieved successfully.",
-      total: assignedTests.length,
-      tests: assignedTests,
+      total: testsWithStatus.length,
+      tests: testsWithStatus, // Return the modified tests
     });
   } catch (error) {
-    next(error);
+    next(error); 
   }
 };
 
