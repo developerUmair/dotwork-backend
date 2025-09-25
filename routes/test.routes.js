@@ -11,8 +11,11 @@ import {
   authenticateToken,
   authorizeRoles,
 } from "../middlewares/auth.middleware.js";
-import { getAllAttempts, submitTestAttemptFromBody } from "../controllers/attempt.controller.js";
-
+import {
+  getAllAttempts,
+  submitTestAttemptFromBody,
+} from "../controllers/attempt.controller.js";
+import { resolveInvite } from "../controllers/invite.controller.js";
 
 const testRoutes = express.Router();
 
@@ -22,6 +25,8 @@ testRoutes.post(
   authorizeRoles("HR", "ADMIN"),
   createTest
 );
+
+testRoutes.post("/invites/resolve", resolveInvite);
 testRoutes.patch(
   "/add-candidates/:testId",
   authenticateToken,

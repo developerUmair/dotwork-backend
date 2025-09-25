@@ -1,5 +1,14 @@
+import mongoose from "mongoose";
 import Test from "../models/Test.model.js";
+import User from "../models/User.model.js";
 import AppError from "../utils/AppError.js";
+import {
+  deriveNameFromEmail,
+  encryptInviteToken,
+  randomPassword,
+  sha256,
+  signInvite,
+} from "../utils/invite.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 export const createTest = async (req, res, next) => {
@@ -66,35 +75,35 @@ export const createTest = async (req, res, next) => {
   }
 };
 
+// Updated addCandidatesToTest with better debugging
 export const addCandidatesToTest = async (req, res, next) => {
+  const session = await mongoose.startSession();
   try {
     const { testId } = req.params;
     const { candidateEmails, accessDeadline } = req.body;
 
-    if (
-      !candidateEmails ||
-      !Array.isArray(candidateEmails) ||
-      candidateEmails.length === 0
-    ) {
+    if (!Array.isArray(candidateEmails) || candidateEmails.length === 0)
       return next(new AppError("Candidate emails are required", 400));
-    }
-
-    const test = await Test.findById(testId);
-    if (!test) {
-      return next(new AppError("Test not found", 404));
-    }
 
     const deadlineDate = new Date(accessDeadline);
-    if (deadlineDate <= new Date()) {
+    if (deadlineDate <= new Date())
       return next(new AppError("Access deadline must be in the future", 400));
-    }
-    // Prevent duplicates by email
-    const existingEmails = test.candidates.map((c) => c.email);
-    const newCandidates = candidateEmails
-      .filter((email) => !existingEmails.includes(email))
-      .map((email) => ({ email }));
 
-    if (newCandidates.length === 0) {
+    await session.startTransaction();
+
+    const test = await Test.findById(testId).session(session);
+    if (!test) throw new AppError("Test not found", 404);
+
+    const existingEmails = new Set(
+      test.candidates.map((c) => c.email.toLowerCase())
+    );
+    const toAdd = candidateEmails
+      .map((email) => email.trim().toLowerCase())
+      .filter((e) => e && !existingEmails.has(e));
+
+    if (toAdd.length === 0) {
+      await session.commitTransaction();
+      session.endSession();
       return res.status(200).json({
         status: 200,
         success: true,
@@ -102,33 +111,135 @@ export const addCandidatesToTest = async (req, res, next) => {
       });
     }
 
-    test.candidates.push(...newCandidates);
-    test.accessDeadline = accessDeadline;
-    await test.save();
 
-    // Send invitation emails
-    for (const email of newCandidates) {
-      await sendEmail(
-        email.email,
-        "You have been invited to a Test",
-        "./templates/invite-email.html",
-        {
-          name: "Candidate",
-          testName: test.testName,
-          accessDeadline: new Date(test.accessDeadline).toLocaleDateString(),
-          loginLink: `${process.env.FRONTEND_URL}/login`,
+    const invites = [];
+    const perEmail = [];
+
+    for (let i = 0; i < toAdd.length; i++) {
+      const email = toAdd[i];
+      const normalizedEmail = email.trim().toLowerCase();
+      
+      let user = await User.findOne({ email: normalizedEmail }).session(session);
+      let createdUser = false;
+      
+      if (!user) {
+        try {
+          user = new User({
+            email: normalizedEmail,
+            name: deriveNameFromEmail(normalizedEmail),
+            role: "CANDIDATE",
+            password: randomPassword(),
+            active: false,
+            emailVerified: false,
+            createdBy: req.user?._id,
+          });
+          
+          await user.save({ session });
+          createdUser = true;
+        } catch (error) {
+          if (error.code === 11000) {
+            console.log("Duplicate user detected, fetching existing");
+            user = await User.findOne({ email: normalizedEmail }).session(session);
+            if (!user) {
+              throw new Error(`User creation failed for ${normalizedEmail}`);
+            }
+          } else {
+            throw error;
+          }
         }
-      );
+      }
+
+      // Generate the JWT token for the invite
+      const { token, jti, expiresAt } = signInvite({
+        email: normalizedEmail,
+        testId: test._id.toString(),
+        candidateId: user._id.toString(),
+        ttlMinutes: 60,
+      });
+
+      // Create candidate object with ALL properties set
+      const candidateObj = {
+        email: normalizedEmail,
+        candidateId: user._id,
+        status: "INVITED",
+        invite: {
+          emailStatus: "PENDING",
+          jtiHash: sha256(jti),
+          expiresAt: new Date(
+            Math.min(expiresAt.getTime(), deadlineDate.getTime())
+          ),
+        },
+      };
+
+      // Add the candidate to the test
+      test.candidates.push(candidateObj);
+      invites.push({ email: normalizedEmail, token });
+      perEmail.push({
+        email: normalizedEmail,
+        createdUser,
+        addedToTest: true,
+        inviteCreated: true,
+      });
     }
 
-    res.status(200).json({
+    // Mark the test as modified to ensure Mongoose saves it
+    test.markModified('candidates');
+    const savedTest = await test.save({ session });
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    // Send emails after committing DB
+    await Promise.allSettled(
+      invites.map(async ({ email, token }) => {
+        try {
+          const encryptedToken = await encryptInviteToken(token);
+          const startLink = `${process.env.FRONTEND_URL}/invite?token=${encodeURIComponent(encryptedToken)}`;
+
+          const result = await sendEmail(
+            email,
+            "You're invited to take a Test",
+            "./templates/invite-email.html",
+            {
+              name: "Candidate",
+              testName: test.testName,
+              accessDeadline: test.accessDeadline.toLocaleString(),
+              startLink,
+            }
+          );
+          
+          return { email, success: true };
+        } catch (error) {
+          console.error("Failed to send email to:", email, error);
+          return { email, success: false, error: error.message };
+        }
+      })
+    );
+
+    return res.status(200).json({
       status: 200,
       success: true,
-      message: "Candidates added and invitations sent.",
-      candidatesAdded: newCandidates.length,
+      message: "Candidates pre-registered, linked to test, and invitations sent.",
+      candidatesAdded: toAdd.length,
+      perEmail,
     });
-  } catch (error) {
-    next(error);
+
+  } catch (err) {
+    console.error("Error in addCandidatesToTest:", err);
+    try {
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+    } catch (abortError) {
+      console.error("Error aborting transaction:", abortError);
+    }
+    session.endSession();
+    
+    return next(
+      err instanceof AppError
+        ? err
+        : new AppError(`Failed to add candidates: ${err.message}`, 500)
+    );
   }
 };
 
@@ -209,7 +320,7 @@ export const getAssignedTestsToCandidate = async (req, res, next) => {
       tests: testsWithStatus, // Return the modified tests
     });
   } catch (error) {
-    next(error); 
+    next(error);
   }
 };
 

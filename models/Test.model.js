@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { CandidateInviteSchema } from "./CandidateInvite.model.js";  // ← Changed this line
 
 const testSchema = mongoose.Schema(
   {
@@ -16,13 +17,7 @@ const testSchema = mongoose.Schema(
 
     trueFalse: [{ question: String, marks: Number }],
     descriptive: [{ question: String, marks: Number }],
-    candidates: [
-      {
-        email: { type: String, required: true },
-        invitedAt: { type: Date, default: Date.now },
-        hasAttempted: { type: Boolean, default: false },
-      },
-    ],
+    candidates: [CandidateInviteSchema],  // ← Changed this line
     accessDeadline: { type: Date, required: true },
     enableProctoring: { type: Boolean, default: true },
     screenShotFrequency: { type: Number, required: true },

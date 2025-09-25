@@ -3,7 +3,7 @@
   <head>
     <style>
       .button {
-        background-color: #4CAF50;
+        background-color: #4caf50;
         border: none;
         color: white;
         padding: 10px 20px;
@@ -18,13 +18,25 @@
     </style>
   </head>
   <body>
-    <p>Hello,</p>
+    <p>Hi {{name}},</p>
     <p>You have been invited to take the test: <strong>{{testName}}</strong></p>
-    <p>Access Deadline: {{accessDeadline}}</p>
+    <p>Access deadline: {{accessDeadline}}</p>
     <p>
-      <a href="{{loginLink}}" class="button">Login to Your Account</a>
+      <a
+        href="{{startLink}}"
+        target="_blank"
+        style="
+          background: #2563eb;
+          color: #fff;
+          padding: 10px 16px;
+          border-radius: 8px;
+          text-decoration: none;
+        "
+      >
+        Start Test
+      </a>
     </p>
-    <p><strong>Note:</strong> After logging in, please navigate to the <strong>"Test"</strong> tab to start the test.</p>
+    <p>This link works once. Do not share.</p>
     <p>Best of Luck!</p>
   </body>
 </html>
